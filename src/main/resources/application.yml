@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  data:
+    mongodb:
+      host: localhost
+      database: teams
+      port: 27017
+  jackson:
+    write_dates_as_timestamps: true
+    default-property-inclusion: non_null
+    serialization:
+      indent_output: true
