@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/teams")
 public class TeamsController {
-    private final TeamRepository teamRepository;
+    private final TeamInMemoryRepository teamRepository;
 
     @Autowired
-    public TeamsController(TeamRepository teamRepository) {
+    public TeamsController(TeamInMemoryRepository teamRepository) {
         this.teamRepository = teamRepository;
     }
 
@@ -28,9 +28,9 @@ public class TeamsController {
         return ResponseEntity.ok(teams);
     }
 
-    @RequestMapping(value = "/{name}", method = GET)
-    public HttpEntity<Team> findTeam(@PathVariable String name) {
-        Team team = teamRepository.findByName(name);
+    @RequestMapping(value = "/{id}", method = GET)
+    public HttpEntity<Team> findTeam(@PathVariable String id) {
+        Team team = teamRepository.findById(id);
         if (null == team) {
             return ResponseEntity.notFound().build();
         }
@@ -38,6 +38,6 @@ public class TeamsController {
     }
 
     private Team hideManagementData(Team team) {
-        return new Team(team.getName(), team.getLogoUrl(), null, null, team.getFoundedOn());
+        return new Team(team.getId(), team.getName(), team.getLogoUrl(), null, null, team.getFoundedOn());
     }
 }
