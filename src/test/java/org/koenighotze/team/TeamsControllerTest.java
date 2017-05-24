@@ -32,7 +32,7 @@ public class TeamsControllerTest {
 
     @Test
     public void should_return_200_if_team_is_known() throws Exception {
-        mockMvc.perform(get("/teams/F95"))
+        mockMvc.perform(get("/teams/1"))
                .andExpect(status().isOk());
     }
 
