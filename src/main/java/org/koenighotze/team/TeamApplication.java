@@ -5,6 +5,8 @@ import static java.util.UUID.randomUUID;
 import java.math.*;
 import java.time.*;
 
+import com.fasterxml.jackson.databind.*;
+import io.vavr.jackson.datatype.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
 import org.springframework.context.annotation.*;
@@ -36,6 +38,17 @@ public class TeamApplication {
             //@formatter:on
         };
     }
+
+    @Bean
+    public Module vavrModule() {
+        return new VavrModule();
+    }
+
+//    @Bean
+//    public Module jsr310Module() {
+//        return new JavaTimeModule();
+//    }
+
 
     public static void main(String[] args) {
         SpringApplication.run(TeamApplication.class, args);

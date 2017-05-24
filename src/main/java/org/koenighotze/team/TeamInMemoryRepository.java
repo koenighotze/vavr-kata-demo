@@ -1,11 +1,10 @@
 package org.koenighotze.team;
 
-import org.springframework.data.mongodb.repository.*;
-
 import java.math.*;
 import java.time.*;
 import java.util.*;
 
+import io.vavr.control.*;
 import org.springframework.stereotype.*;
 
 @Repository
@@ -13,9 +12,8 @@ public class TeamInMemoryRepository {
     private final Map<String, Team> data = new HashMap<>();
 
     public TeamInMemoryRepository() {
-        save(new Team("1", "Fortuna Düsseldorf",
-                      "https://tmssl.akamaized.net//images/wappen/head/38.png?lm=1405514004", "Friedhelm Funkel",
-                      BigDecimal.valueOf(13000000), LocalDate.of(1895, 5, 5)));
+        save(new Team("1", "Fortuna Düsseldorf", "https://tmssl.akamaized.net//images/wappen/head/38.png?lm=1405514004",
+                      "Friedhelm Funkel", BigDecimal.valueOf(13000000), LocalDate.of(1895, 5, 5)));
         save(new Team("2", "1. FC Kaiserslautern",
                       "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Logo_1_FC_Kaiserslautern.svg/360px-Logo_1_FC_Kaiserslautern.svg.png",
                       "Norbert Meier", BigDecimal.valueOf(15800000), LocalDate.of(1900, 6, 2)));
@@ -32,7 +30,7 @@ public class TeamInMemoryRepository {
         return data.values();
     }
 
-    public Team findById(String id) {
-        return data.get(id);
+    public Option<Team> findById(String id) {
+        return Option.of(data.get(id));
     }
 }

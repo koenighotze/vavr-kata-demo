@@ -3,8 +3,8 @@ package org.koenighotze.team;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.Base64.getEncoder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.REQUEST_TIMEOUT;
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM;
@@ -13,10 +13,11 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import java.awt.image.*;
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.util.concurrent.*;
 import javax.imageio.*;
 
+import io.vavr.collection.*;
+import io.vavr.control.*;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.*;
@@ -38,63 +39,47 @@ public class TeamsController {
 
     @RequestMapping(method = GET)
     public HttpEntity<List<Team>> getAllTeams() {
-        List<Team> teams = teamRepository.findAll()
-                                         .stream()
-                                         .map(this::hideManagementData)
-                                         .collect(toList());
+        List<Team> teams = List.ofAll(teamRepository.findAll())
+                               .map(this::hideManagementData);
         return ResponseEntity.ok(teams);
     }
 
     @RequestMapping(value = "/{id}", method = GET)
     public HttpEntity<Team> findTeam(@PathVariable String id) {
-        Team team = teamRepository.findById(id);
-        if (null == team) {
-            return ResponseEntity.notFound()
-                                 .build();
-        }
-        return ResponseEntity.ok(team);
+        return teamRepository.findById(id)
+                             .map(ResponseEntity::ok)
+                             .getOrElse(() -> ResponseEntity.notFound()
+                                                            .build());
     }
 
     @RequestMapping(value = "/{id}/logo", method = GET)
     public HttpEntity<String> fetchLogo(@PathVariable String id) {
-        Team team = teamRepository.findById(id);
-        if (null == team) {
-            return ResponseEntity.notFound()
-                                 .build();
-        }
+        return teamRepository.findById(id)
+                             .map(Team::getLogoUrl)
+                             .map(this::readTeamLogoWithTimeout)
+                             .map(logo -> logo.map(imageData -> {
+                                 HttpHeaders httpHeaders = new HttpHeaders();
+                                 httpHeaders.setContentType(APPLICATION_OCTET_STREAM);
 
-        if (null != team.getLogoUrl()) {
-            try {
-                String logo = readTeamLogoWithTimeout(team);
-
-                HttpHeaders httpHeaders = new HttpHeaders();
-                httpHeaders.setContentType(APPLICATION_OCTET_STREAM);
-
-                return new ResponseEntity<>(logo, httpHeaders, OK);
-            } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                logger.warn("Cannot read logo from " + team.getLogoUrl(), e);
-                return ResponseEntity.status(REQUEST_TIMEOUT)
-                                     .body("Cannot load logo from " + team.getLogoUrl());
-            }
-        }
-        return ResponseEntity.noContent()
-                             .build();
-
+                                 return new ResponseEntity<>(imageData, httpHeaders, OK);
+                             })
+                            .getOrElseGet(e -> new ResponseEntity<>("Cannot load logo due to timeout ", REQUEST_TIMEOUT)))
+                            .getOrElse(() -> new ResponseEntity<>("Cannot load logo ", NOT_FOUND));
     }
 
-    private String readTeamLogoWithTimeout(Team team) throws InterruptedException, ExecutionException, TimeoutException {
-        return CompletableFuture.supplyAsync(() -> {
+    private Try<String> readTeamLogoWithTimeout(String logo) {
+        return Try.of(() -> CompletableFuture.supplyAsync(() -> {
             try {
-                return readLogoFromTeam(team);
+                return readLogoFromTeam(logo);
             } catch (IOException e) {
-                logger.warn("Cannot read image from " + team.getLogoUrl(), e);
-                return null;
+                throw new RuntimeException(e);
             }
-        }).get(3000, MILLISECONDS);
+        })
+                                             .get(3000, MILLISECONDS));
     }
 
-    private String readLogoFromTeam(Team team) throws IOException {
-        BufferedImage image = ImageIO.read(new URL(team.getLogoUrl()));
+    private String readLogoFromTeam(String logo) throws IOException {
+        BufferedImage image = ImageIO.read(new URL(logo));
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         ImageIO.write(image, "png", os);
         return new String(getEncoder().encode(os.toByteArray()), ISO_8859_1);
