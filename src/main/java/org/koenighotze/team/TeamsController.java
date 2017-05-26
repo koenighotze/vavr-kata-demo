@@ -66,26 +66,31 @@ public class TeamsController {
                              .map(this::readTeamLogoWithTimeout)
                              .map(tryLogo ->
                                       Match(tryLogo).of(
-                                        Case($Success($()), this::logoFetchSuccessful),
-                                        Case($Failure($(instanceOf(TimeoutException.class))), this::logoFetchTimedoutResponse)
+                                        Case($Success($()), TeamsController::logoFetchSuccessful),
+                                        Case($Failure($(instanceOf(TimeoutException.class))), TeamsController::logoFetchTimedoutResponse),
+                                        Case($Failure($()), TeamsController::logoFetchFailed)
                                       )
                              )
                              .getOrElse(TeamsController::logoFetchNotFoundResponse);
         //@formatter:on
     }
 
+    private static HttpEntity<String> logoFetchFailed() {
+        return new ResponseEntity<>("Cannot fetch logo ", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     private static HttpEntity<String> logoFetchNotFoundResponse() {
         return new ResponseEntity<>("Cannot load logo ", NOT_FOUND);
     }
 
-    private HttpEntity<String> logoFetchSuccessful(String imageData) {
+    private static HttpEntity<String> logoFetchSuccessful(String imageData) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(APPLICATION_OCTET_STREAM);
 
         return new ResponseEntity<>(imageData, httpHeaders, OK);
     }
 
-    private HttpEntity<String> logoFetchTimedoutResponse() {
+    private static HttpEntity<String> logoFetchTimedoutResponse() {
         return new ResponseEntity<>("Cannot load logo due to timeout ", REQUEST_TIMEOUT);
     }
 

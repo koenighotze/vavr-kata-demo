@@ -33,6 +33,12 @@ public class TeamApplication {
                                          "Olaf Janßen",
                                          BigDecimal.valueOf(15000000),
                                          LocalDate.of(1910, 5, 15)));
+            teamRepository.save(new Team("4",
+                                         "Eintracht Braunschweig",
+                                         "http://localhost:8080/timeout",
+                                         "Torsten Lieberknecht",
+                                         BigDecimal.valueOf(20100000),
+                                         LocalDate.of(1895, 12, 15)));
             //@formatter:on
         };
     }
