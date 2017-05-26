@@ -1,7 +1,5 @@
 package org.koenighotze.team;
 
-import static java.util.UUID.randomUUID;
-
 import java.math.*;
 import java.time.*;
 
@@ -17,21 +15,21 @@ public class TeamApplication {
     CommandLineRunner commandLineRunner(TeamInMemoryRepository teamRepository) {
         return evt -> {
             //@formatter:off
-            teamRepository.save(new Team(randomUUID().toString(),
+            teamRepository.save(new Team("1",
                                          "Fortuna Düsseldorf",
                                          "https://tmssl.akamaized.net//images/wappen/head/38.png?lm=1405514004",
                                          "Friedhelm Funkel",
                                          BigDecimal.valueOf(13000000),
                                          LocalDate.of(1895, 5, 5)));
-            teamRepository.save(new Team(randomUUID().toString(),
+            teamRepository.save(new Team("2",
                                          "1. FC Kaiserslautern",
-                                         "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Logo_1_FC_Kaiserslautern.svg/360px-Logo_1_FC_Kaiserslautern.svg.png",
+                                         "This is not a valid url",
                                          "Norbert Meier",
                                          BigDecimal.valueOf(15800000),
                                          LocalDate.of(1900, 6, 2)));
-            teamRepository.save(new Team(randomUUID().toString(),
+            teamRepository.save(new Team("3",
                                          "FC St Pauli",
-                                         "https://upload.wikimedia.org/wikipedia/en/thumb/8/81/FC_St._Pauli_logo.svg/460px-FC_St._Pauli_logo.svg.png",
+                                         "https://this.will.point.nowhere.de/",
                                          "Olaf Janßen",
                                          BigDecimal.valueOf(15000000),
                                          LocalDate.of(1910, 5, 15)));

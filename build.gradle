@@ -32,6 +32,7 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.8')
 
+    compile("org.springframework.boot:spring-boot-devtools")
     compileOnly "org.projectlombok:lombok:1.16.16"
 
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.5.2'
