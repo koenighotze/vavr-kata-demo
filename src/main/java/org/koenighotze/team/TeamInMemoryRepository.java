@@ -3,7 +3,6 @@ package org.koenighotze.team;
 import java.util.*;
 import java.util.concurrent.*;
 
-import io.vavr.control.*;
 import org.springframework.stereotype.*;
 
 @Repository
@@ -18,8 +17,8 @@ public class TeamInMemoryRepository {
         return data.values();
     }
 
-    public Option<Team> findById(String id) {
-        return Option.of(data.get(id));
+    public Team findById(String id) {
+        return data.get(id);
     }
 
     public void deleteAll() {

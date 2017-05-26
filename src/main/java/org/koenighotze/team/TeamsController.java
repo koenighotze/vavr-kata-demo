@@ -1,31 +1,24 @@
 package org.koenighotze.team;
 
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
-import static io.vavr.API.Match;
-import static io.vavr.Patterns.$Failure;
-import static io.vavr.Patterns.$Success;
-import static io.vavr.Predicates.instanceOf;
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static java.util.Base64.getEncoder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.REQUEST_TIMEOUT;
-import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM;
+import static org.springframework.http.MediaType.IMAGE_PNG;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.awt.image.*;
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.*;
 import javax.imageio.*;
 
-import io.vavr.collection.*;
-import io.vavr.control.*;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.core.io.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +30,7 @@ public class TeamsController {
     private static final Logger logger = getLogger(TeamsController.class);
 
     private final TeamInMemoryRepository teamRepository;
+    private final String defaultLogo = "whatever";
 
     @Autowired
     public TeamsController(TeamInMemoryRepository teamRepository) {
@@ -45,67 +39,88 @@ public class TeamsController {
 
     @RequestMapping(method = GET)
     public HttpEntity<List<Team>> getAllTeams() {
-        List<Team> teams = List.ofAll(teamRepository.findAll())
-                               .map(this::hideManagementData);
+        List<Team> teams = teamRepository.findAll()
+                                         .stream()
+                                         .map(this::hideManagementData)
+                                         .collect(Collectors.toList());
         return ResponseEntity.ok(teams);
     }
 
     @RequestMapping(value = "/{id}", method = GET)
     public HttpEntity<Team> findTeam(@PathVariable String id) {
-        return teamRepository.findById(id)
-                             .map(ResponseEntity::ok)
-                             .getOrElse(() -> ResponseEntity.notFound()
-                                                            .build());
+        Team team = teamRepository.findById(id);
+
+        if (team == null) {
+            return ResponseEntity.notFound()
+                                 .build();
+        }
+
+        return ResponseEntity.ok(team);
     }
 
     @RequestMapping(value = "/{id}/logo", method = GET)
-    public HttpEntity<String> fetchLogo(@PathVariable String id) {
+    @ResponseBody
+    public HttpEntity<InputStreamResource> fetchLogo(@PathVariable String id) {
+        Team team = teamRepository.findById(id);
+
+        if (team == null) {
+            logger.warn("Logo fetch aborted. Team not found.");
+            return logoFetchNotFoundResponse();
+        }
+
+        try {
+            ByteArrayOutputStream logo = readLogoFromTeamWithTimeout(team.getLogoUrl());
+
+            return logoFetchSuccessful(logo);
+
+            //            return ResponseEntity.ok(new ByteArrayInputStream(logo.toByteArray()));
+        } catch (InterruptedException | TimeoutException e) {
+            logger.warn("Logo fetch aborted due to timeout", e);
+            return logoFetchTimedoutResponse();
+        } catch (ExecutionException e) {
+            logger.warn("Logo fetch failed to to internal error", e.getCause());
+            return logoFetchFailed();
+        }
+    }
+
+    private static HttpEntity<InputStreamResource> logoFetchFailed() {
+        return new ResponseEntity<>(BAD_REQUEST);
+    }
+
+    private static HttpEntity<InputStreamResource> logoFetchNotFoundResponse() {
+        return new ResponseEntity<>(NOT_FOUND);
+    }
+
+    private static HttpEntity<InputStreamResource> logoFetchSuccessful(ByteArrayOutputStream logo) {
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(IMAGE_PNG);
+
+        return ResponseEntity.ok(new InputStreamResource(new ByteArrayInputStream(logo.toByteArray())));
+
+        //        return new ResponseEntity<>(imageData, httpHeaders, OK);
+    }
+
+    private static HttpEntity<InputStreamResource> logoFetchTimedoutResponse() {
+        return new ResponseEntity<>(REQUEST_TIMEOUT);
+    }
+
+    private ByteArrayOutputStream readLogoFromTeamWithTimeout(String logo) throws InterruptedException, ExecutionException, TimeoutException {
         //@formatter:off
-        return teamRepository.findById(id)
-                             .map(Team::getLogoUrl)
-                             .map(this::readTeamLogoWithTimeout)
-                             .map(tryLogo ->
-                                      Match(tryLogo).of(
-                                        Case($Success($()), TeamsController::logoFetchSuccessful),
-                                        Case($Failure($(instanceOf(TimeoutException.class))), TeamsController::logoFetchTimedoutResponse),
-                                        Case($Failure($()), TeamsController::logoFetchFailed)
-                                      )
-                             )
-                             .getOrElse(TeamsController::logoFetchNotFoundResponse);
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return readLogoFromTeam(logo);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }).get(3000, MILLISECONDS);
         //@formatter:on
     }
 
-    private static HttpEntity<String> logoFetchFailed() {
-        return new ResponseEntity<>("Cannot fetch logo ", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    private static HttpEntity<String> logoFetchNotFoundResponse() {
-        return new ResponseEntity<>("Cannot load logo ", NOT_FOUND);
-    }
-
-    private static HttpEntity<String> logoFetchSuccessful(String imageData) {
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(APPLICATION_OCTET_STREAM);
-
-        return new ResponseEntity<>(imageData, httpHeaders, OK);
-    }
-
-    private static HttpEntity<String> logoFetchTimedoutResponse() {
-        return new ResponseEntity<>("Cannot load logo due to timeout ", REQUEST_TIMEOUT);
-    }
-
-    private Try<String> readTeamLogoWithTimeout(String logo) {
-        return Try.of(() -> CompletableFuture.supplyAsync(() -> readLogoFromTeam(logo).get())
-                                             .get(3000, MILLISECONDS));
-    }
-
-    private Try<String> readLogoFromTeam(String logo) {
-        return Try.of(() -> {
-            BufferedImage image = ImageIO.read(new URL(logo));
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            ImageIO.write(image, "png", os);
-            return new String(getEncoder().encode(os.toByteArray()), ISO_8859_1);
-        });
+    private ByteArrayOutputStream readLogoFromTeam(String logo) throws IOException {
+        BufferedImage image = ImageIO.read(new URL(logo));
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", os);
+        return os;
     }
 
     private Team hideManagementData(Team team) {

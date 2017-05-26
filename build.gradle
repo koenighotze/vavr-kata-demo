@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        springBootVersion = '1.5.3.RELEASE'
+        springBootVersion = '1.5.7.RELEASE'
     }
     repositories {
         mavenCentral()
@@ -12,7 +12,6 @@ buildscript {
 }
 
 apply plugin: 'java'
-//apply plugin: 'int'
 apply plugin: 'org.springframework.boot'
 
 group = 'org.koenighotze'
@@ -35,16 +34,7 @@ dependencies {
     compile("org.springframework.boot:spring-boot-devtools")
     compileOnly "org.projectlombok:lombok:1.16.16"
 
-    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.5.2'
+    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile("org.springframework.boot:spring-boot-starter-test")
-
-    // vavr dependencies
-    compile "io.vavr:vavr:0.9.0"
-
-    // jackson support for vavr datatypes
-    compile group: 'io.vavr', name: 'vavr-jackson', version: '0.9.0'
-
-    // property test
-    testCompile group: 'io.vavr', name: 'vavr-test', version: '0.9.0'
 }

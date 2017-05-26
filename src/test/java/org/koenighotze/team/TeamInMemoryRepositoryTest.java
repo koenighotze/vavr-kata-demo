@@ -9,7 +9,6 @@ import java.math.*;
 import java.time.*;
 import java.util.*;
 
-import io.vavr.control.*;
 import org.junit.*;
 
 public class TeamInMemoryRepositoryTest {
@@ -43,7 +42,7 @@ public class TeamInMemoryRepositoryTest {
     public void save_stores_a_team() {
         repository.save(team);
 
-        assertThat(repository.findById(team.getId())).isEqualTo(Option.of(team));
+        assertThat(repository.findById(team.getId())).isEqualTo(team);
     }
 
     @Test
@@ -53,23 +52,23 @@ public class TeamInMemoryRepositoryTest {
 
         repository.save(newTeam);
 
-        assertThat(repository.findById(team.getId())).isEqualTo(Option.of(newTeam));
+        assertThat(repository.findById(team.getId())).isEqualTo(newTeam);
     }
 
     @Test
     public void an_existing_team_can_be_found() {
         repository.save(team);
 
-        Option<Team> foundTeam = repository.findById(team.getId());
+        Team foundTeam = repository.findById(team.getId());
 
-        assertThat(foundTeam).isEqualTo(Option.of(team));
+        assertThat(foundTeam).isEqualTo(team);
     }
 
     @Test
     public void if_the_team_is_missing_it_cannot_be_found() {
-        Option<Team> foundTeam = repository.findById(team.getId());
+        Team foundTeam = repository.findById(team.getId());
 
-        assertThat(foundTeam).isEqualTo(Option.none());
+        assertThat(foundTeam).isNull();
     }
 
     @Test
