@@ -5,6 +5,7 @@ import static java.util.Base64.getEncoder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.REQUEST_TIMEOUT;
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM;
@@ -59,38 +60,39 @@ public class TeamsController {
     public HttpEntity<String> fetchLogo(@PathVariable String id) {
         Team team = teamRepository.findById(id);
         if (null == team) {
-            return ResponseEntity.notFound()
-                                 .build();
+            return logoFetchNotFoundResponse();
         }
 
-        if (null != team.getLogoUrl()) {
-            try {
-                String logo = readTeamLogoWithTimeout(team);
-
-                HttpHeaders httpHeaders = new HttpHeaders();
-                httpHeaders.setContentType(APPLICATION_OCTET_STREAM);
-
-                return new ResponseEntity<>(logo, httpHeaders, OK);
-            } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                logger.warn("Cannot read logo from " + team.getLogoUrl(), e);
-                return ResponseEntity.status(REQUEST_TIMEOUT)
-                                     .body("Cannot load logo from " + team.getLogoUrl());
-            }
+        if (null == team.getLogoUrl()) {
+            return logoFetchNotFoundResponse();
         }
-        return ResponseEntity.noContent()
-                             .build();
+
+        try {
+            String logo = readTeamLogoWithTimeout(team);
+
+            return logoFetchSuccessful(logo);
+        } catch (TimeoutException | InterruptedException e) {
+            logger.warn("Cannot read logo from " + team.getLogoUrl(), e);
+            return logoFetchTimedoutResponse();
+        } catch (ExecutionException e) {
+            return logoFetchFailed();
+        }
 
     }
 
     private String readTeamLogoWithTimeout(Team team) throws InterruptedException, ExecutionException, TimeoutException {
+        //@formatter:off
+        // bad completable future error handling incoming. DO NOT do this!
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return readLogoFromTeam(team);
             } catch (IOException e) {
                 logger.warn("Cannot read image from " + team.getLogoUrl(), e);
-                return null;
+                throw new RuntimeException(e);
             }
-        }).get(3000, MILLISECONDS);
+        })
+        .get(3000, MILLISECONDS);
+        //@formatter:on
     }
 
     private String readLogoFromTeam(Team team) throws IOException {
@@ -98,6 +100,25 @@ public class TeamsController {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         ImageIO.write(image, "png", os);
         return new String(getEncoder().encode(os.toByteArray()), ISO_8859_1);
+    }
+
+    private static HttpEntity<String> logoFetchFailed() {
+        return new ResponseEntity<>("Cannot fetch logo ", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private static HttpEntity<String> logoFetchNotFoundResponse() {
+        return new ResponseEntity<>("Cannot load logo ", NOT_FOUND);
+    }
+
+    private static HttpEntity<String> logoFetchSuccessful(String imageData) {
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(APPLICATION_OCTET_STREAM);
+
+        return new ResponseEntity<>(imageData, httpHeaders, OK);
+    }
+
+    private static HttpEntity<String> logoFetchTimedoutResponse() {
+        return new ResponseEntity<>("Cannot load logo due to timeout ", REQUEST_TIMEOUT);
     }
 
     private Team hideManagementData(Team team) {
