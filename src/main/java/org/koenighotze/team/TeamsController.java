@@ -3,6 +3,7 @@ package org.koenighotze.team;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
+import static io.vavr.CheckedFunction1.lift;
 import static io.vavr.Patterns.$Failure;
 import static io.vavr.Patterns.$Success;
 import static io.vavr.Predicates.instanceOf;
@@ -22,6 +23,7 @@ import java.net.*;
 import java.util.concurrent.*;
 import javax.imageio.*;
 
+import io.vavr.*;
 import io.vavr.collection.*;
 import io.vavr.control.*;
 import org.slf4j.*;
@@ -37,6 +39,7 @@ public class TeamsController {
     private static final Logger logger = getLogger(TeamsController.class);
 
     private final TeamInMemoryRepository teamRepository;
+    private final String defaultLogo = "whatever";
 
     @Autowired
     public TeamsController(TeamInMemoryRepository teamRepository) {
@@ -95,17 +98,17 @@ public class TeamsController {
     }
 
     private Try<String> readTeamLogoWithTimeout(String logo) {
-        return Try.of(() -> CompletableFuture.supplyAsync(() -> readLogoFromTeam(logo).get())
+        Function1<String, Option<String>> lifted = lift(this::readLogoFromTeam);
+
+        return Try.of(() -> CompletableFuture.supplyAsync(() -> lifted.apply(logo).getOrElse(defaultLogo))
                                              .get(3000, MILLISECONDS));
     }
 
-    private Try<String> readLogoFromTeam(String logo) {
-        return Try.of(() -> {
-            BufferedImage image = ImageIO.read(new URL(logo));
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            ImageIO.write(image, "png", os);
-            return new String(getEncoder().encode(os.toByteArray()), ISO_8859_1);
-        });
+    private String readLogoFromTeam(String logo) throws IOException {
+        BufferedImage image = ImageIO.read(new URL(logo));
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", os);
+        return new String(getEncoder().encode(os.toByteArray()), ISO_8859_1);
     }
 
     private Team hideManagementData(Team team) {
