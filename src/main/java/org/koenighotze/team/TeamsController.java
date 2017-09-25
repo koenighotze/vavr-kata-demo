@@ -30,7 +30,6 @@ public class TeamsController {
     private static final Logger logger = getLogger(TeamsController.class);
 
     private final TeamInMemoryRepository teamRepository;
-    private final String defaultLogo = "whatever";
 
     @Autowired
     public TeamsController(TeamInMemoryRepository teamRepository) {
@@ -72,8 +71,6 @@ public class TeamsController {
             ByteArrayOutputStream logo = readLogoFromTeamWithTimeout(team.getLogoUrl());
 
             return logoFetchSuccessful(logo);
-
-            //            return ResponseEntity.ok(new ByteArrayInputStream(logo.toByteArray()));
         } catch (InterruptedException | TimeoutException e) {
             logger.warn("Logo fetch aborted due to timeout", e);
             return logoFetchTimedoutResponse();
@@ -97,7 +94,6 @@ public class TeamsController {
 
         return ResponseEntity.ok(new InputStreamResource(new ByteArrayInputStream(logo.toByteArray())));
 
-        //        return new ResponseEntity<>(imageData, httpHeaders, OK);
     }
 
     private static HttpEntity<InputStreamResource> logoFetchTimedoutResponse() {
