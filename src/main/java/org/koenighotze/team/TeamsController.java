@@ -43,26 +43,22 @@ public class TeamsController {
 
     @RequestMapping(value = "/{id}", method = GET)
     public HttpEntity<Team> findTeam(@PathVariable String id) {
-        Team team = teamRepository.findById(id).get(); // will throw if null :(
-
-        if (team == null) {
-            return ResponseEntity.notFound()
-                                 .build();
-        }
-
-        return ResponseEntity.ok(team);
+        return teamRepository.findById(id)
+                             .map(ResponseEntity::ok)
+                             .getOrElse(() -> ResponseEntity.notFound()
+                                                            .build());
     }
 
     @RequestMapping(value = "/{id}/logo", method = GET)
     @ResponseBody
     public HttpEntity<InputStreamResource> fetchLogo(@PathVariable String id) {
-        Team team = teamRepository.findById(id).get(); // will throw if null :(
+        return teamRepository.findById(id)
+                             .map(this::fetchLogoForTeam)
+                             .getOrElse(TeamsController::logoFetchNotFoundResponse);
 
-        if (team == null) {
-            logger.warn("Logo fetch aborted. Team not found.");
-            return logoFetchNotFoundResponse();
-        }
+    }
 
+    private HttpEntity<InputStreamResource> fetchLogoForTeam(Team team) {
         try {
             ByteArrayOutputStream logo = readLogoFromTeamWithTimeout(team.getLogoUrl());
 
