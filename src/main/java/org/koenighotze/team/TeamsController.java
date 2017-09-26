@@ -11,11 +11,10 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import java.awt.image.*;
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.*;
 import javax.imageio.*;
 
+import io.vavr.collection.*;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.core.io.*;
@@ -37,12 +36,10 @@ public class TeamsController {
     }
 
     @RequestMapping(method = GET)
-    public HttpEntity<List<Team>> getAllTeams() {
-        List<Team> teams = teamRepository.findAll()
-                                         .stream()
-                                         .map(this::hideManagementData)
-                                         .collect(Collectors.toList());
-        return ResponseEntity.ok(teams);
+    public HttpEntity<java.util.List<Team>> getAllTeams() {
+        List<Team> teams = List.ofAll(teamRepository.findAll())
+                               .map(this::hideManagementData);
+        return ResponseEntity.ok(teams.toJavaList());
     }
 
     @RequestMapping(value = "/{id}", method = GET)
@@ -89,9 +86,6 @@ public class TeamsController {
     }
 
     private static HttpEntity<InputStreamResource> logoFetchSuccessful(ByteArrayOutputStream logo) {
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(IMAGE_PNG);
-
         return ResponseEntity.ok(new InputStreamResource(new ByteArrayInputStream(logo.toByteArray())));
 
     }
