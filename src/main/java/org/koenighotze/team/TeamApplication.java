@@ -3,6 +3,8 @@ package org.koenighotze.team;
 import java.math.*;
 import java.time.*;
 
+import com.fasterxml.jackson.databind.*;
+import io.vavr.jackson.datatype.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
 import org.springframework.context.annotation.*;
@@ -39,6 +41,11 @@ public class TeamApplication {
                                          LocalDate.of(1895, 12, 15)));
             //@formatter:on
         };
+    }
+
+    @Bean
+    public Module vavrModule() {
+        return new VavrModule();
     }
 
     public static void main(String[] args) {

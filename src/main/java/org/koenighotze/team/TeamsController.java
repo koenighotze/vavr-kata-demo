@@ -35,10 +35,10 @@ public class TeamsController {
     }
 
     @RequestMapping(method = GET)
-    public HttpEntity<java.util.List<Team>> getAllTeams() {
-        List<Team> teams = List.ofAll(teamRepository.findAll())
-                               .map(this::hideManagementData);
-        return ResponseEntity.ok(teams.toJavaList());
+    public HttpEntity<List<Team>> getAllTeams() {
+        List<Team> teams = teamRepository.findAll()
+                                         .map(this::hideManagementData);
+        return ResponseEntity.ok(teams);
     }
 
     @RequestMapping(value = "/{id}", method = GET)
