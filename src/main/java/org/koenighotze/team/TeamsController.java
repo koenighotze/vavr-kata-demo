@@ -5,7 +5,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.REQUEST_TIMEOUT;
-import static org.springframework.http.MediaType.IMAGE_PNG;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.awt.image.*;
@@ -44,7 +43,7 @@ public class TeamsController {
 
     @RequestMapping(value = "/{id}", method = GET)
     public HttpEntity<Team> findTeam(@PathVariable String id) {
-        Team team = teamRepository.findById(id);
+        Team team = teamRepository.findById(id).get(); // will throw if null :(
 
         if (team == null) {
             return ResponseEntity.notFound()
@@ -57,7 +56,7 @@ public class TeamsController {
     @RequestMapping(value = "/{id}/logo", method = GET)
     @ResponseBody
     public HttpEntity<InputStreamResource> fetchLogo(@PathVariable String id) {
-        Team team = teamRepository.findById(id);
+        Team team = teamRepository.findById(id).get(); // will throw if null :(
 
         if (team == null) {
             logger.warn("Logo fetch aborted. Team not found.");
