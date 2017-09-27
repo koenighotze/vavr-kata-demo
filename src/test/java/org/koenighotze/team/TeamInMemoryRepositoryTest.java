@@ -7,8 +7,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.*;
 import java.time.*;
-import java.util.*;
 
+import io.vavr.collection.*;
+import io.vavr.control.*;
 import org.junit.*;
 
 public class TeamInMemoryRepositoryTest {
@@ -42,7 +43,7 @@ public class TeamInMemoryRepositoryTest {
     public void save_stores_a_team() {
         repository.save(team);
 
-        assertThat(repository.findById(team.getId())).isEqualTo(team);
+        assertThat(repository.findById(team.getId()).get()).isEqualTo(team);
     }
 
     @Test
@@ -52,30 +53,31 @@ public class TeamInMemoryRepositoryTest {
 
         repository.save(newTeam);
 
-        assertThat(repository.findById(team.getId())).isEqualTo(newTeam);
+        assertThat(repository.findById(team.getId()).get()).isEqualTo(newTeam);
     }
 
     @Test
     public void an_existing_team_can_be_found() {
         repository.save(team);
 
-        Team foundTeam = repository.findById(team.getId());
+        Team foundTeam = repository.findById(team.getId())
+                                   .get();
 
         assertThat(foundTeam).isEqualTo(team);
     }
 
     @Test
     public void if_the_team_is_missing_it_cannot_be_found() {
-        Team foundTeam = repository.findById(team.getId());
+        Option<Team> foundTeam = repository.findById(team.getId());
 
-        assertThat(foundTeam).isNull();
+        assertThat(foundTeam.isEmpty());
     }
 
     @Test
     public void findAll_returns_all_teams() {
         repository.save(team);
 
-        Collection<Team> allTeams = repository.findAll();
+        List<Team> allTeams = repository.findAll();
 
         assertThat(allTeams).hasSize(2);
     }
@@ -83,8 +85,8 @@ public class TeamInMemoryRepositoryTest {
     @Test
     public void findAll_returns_empty_if_no_teams_are_found() {
         repository.deleteAll();
-        
-        Collection<Team> allTeams = repository.findAll();
+
+        List<Team> allTeams = repository.findAll();
 
         assertThat(allTeams).isEmpty();
     }
