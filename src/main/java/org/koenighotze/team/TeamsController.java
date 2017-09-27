@@ -1,6 +1,12 @@
 package org.koenighotze.team;
 
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+import static io.vavr.API.Match;
 import static io.vavr.CheckedFunction1.lift;
+import static io.vavr.Patterns.$Failure;
+import static io.vavr.Patterns.$Success;
+import static io.vavr.Predicates.instanceOf;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -57,16 +63,21 @@ public class TeamsController {
         return teamRepository.findById(id)
                              .map(this::fetchLogoForTeam)
                              .getOrElse(TeamsController::logoFetchNotFoundResponse);
-
     }
 
     private HttpEntity<InputStreamResource> fetchLogoForTeam(Team team) {
         //@formatter:off
-        return readLogoFromTeamWithTimeout(team.getLogoUrl())
-                    .map(result -> result.map(TeamsController::logoFetchSuccessful).getOrElse(TeamsController::logoFetchFailed))
-                    .recover(ExecutionException.class, logoFetchFailed())
-                    .getOrElseGet(t -> logoFetchTimedoutResponse());
+        Try<Option<ByteArrayOutputStream>> tryLogo = readLogoFromTeamWithTimeout(team.getLogoUrl())
+                                                                .onFailure(t -> logger.warn("Fetch failed", t));
+        return
+            Match(tryLogo).of(
+                Case($Success($()), t -> t.map(TeamsController::logoFetchSuccessful).getOrElse(TeamsController::logoFetchFailed)),
+                Case($Failure($(instanceOf(TimeoutException.class))), TeamsController::logoFetchTimedoutResponse),
+                Case($Failure($()), TeamsController::logoFetchFailed)
+            );
         //@formatter:on
+
+        // Bonus question: why is an invalid URL exception not printed?
     }
 
     private static HttpEntity<InputStreamResource> logoFetchFailed() {
