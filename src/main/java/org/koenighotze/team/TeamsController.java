@@ -61,17 +61,12 @@ public class TeamsController {
     }
 
     private HttpEntity<InputStreamResource> fetchLogoForTeam(Team team) {
-        try {
-            return readLogoFromTeamWithTimeout(team.getLogoUrl())
-                        .map(TeamsController::logoFetchSuccessful)
-                        .getOrElse(TeamsController::logoFetchFailed);
-        } catch (InterruptedException | TimeoutException e) {
-            logger.warn("Logo fetch aborted due to timeout", e);
-            return logoFetchTimedoutResponse();
-        } catch (ExecutionException e) {
-            logger.warn("Logo fetch failed to to internal error", e.getCause());
-            return logoFetchFailed();
-        }
+        //@formatter:off
+        return readLogoFromTeamWithTimeout(team.getLogoUrl())
+                    .map(result -> result.map(TeamsController::logoFetchSuccessful).getOrElse(TeamsController::logoFetchFailed))
+                    .recover(ExecutionException.class, logoFetchFailed())
+                    .getOrElseGet(t -> logoFetchTimedoutResponse());
+        //@formatter:on
     }
 
     private static HttpEntity<InputStreamResource> logoFetchFailed() {
@@ -84,16 +79,15 @@ public class TeamsController {
 
     private static HttpEntity<InputStreamResource> logoFetchSuccessful(ByteArrayOutputStream logo) {
         return ResponseEntity.ok(new InputStreamResource(new ByteArrayInputStream(logo.toByteArray())));
-
     }
 
     private static HttpEntity<InputStreamResource> logoFetchTimedoutResponse() {
         return new ResponseEntity<>(REQUEST_TIMEOUT);
     }
 
-    private Option<ByteArrayOutputStream> readLogoFromTeamWithTimeout(String logo) throws InterruptedException, ExecutionException, TimeoutException {
-        return CompletableFuture.supplyAsync(() -> liftedReadLogoFromTeam(logo))
-                                .get(3000, MILLISECONDS);
+    private Try<Option<ByteArrayOutputStream>> readLogoFromTeamWithTimeout(String logo) {
+        return Try.of(() -> CompletableFuture.supplyAsync(() -> liftedReadLogoFromTeam(logo))
+                                             .get(3000, MILLISECONDS));
     }
 
     Option<ByteArrayOutputStream> liftedReadLogoFromTeam(String logo) {
