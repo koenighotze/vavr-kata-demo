@@ -1,5 +1,6 @@
 package org.koenighotze.team;
 
+import static io.vavr.CheckedFunction1.lift;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -14,6 +15,7 @@ import java.util.concurrent.*;
 import javax.imageio.*;
 
 import io.vavr.collection.*;
+import io.vavr.control.*;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.core.io.*;
@@ -60,9 +62,9 @@ public class TeamsController {
 
     private HttpEntity<InputStreamResource> fetchLogoForTeam(Team team) {
         try {
-            ByteArrayOutputStream logo = readLogoFromTeamWithTimeout(team.getLogoUrl());
-
-            return logoFetchSuccessful(logo);
+            return readLogoFromTeamWithTimeout(team.getLogoUrl())
+                        .map(TeamsController::logoFetchSuccessful)
+                        .getOrElse(TeamsController::logoFetchFailed);
         } catch (InterruptedException | TimeoutException e) {
             logger.warn("Logo fetch aborted due to timeout", e);
             return logoFetchTimedoutResponse();
@@ -89,16 +91,13 @@ public class TeamsController {
         return new ResponseEntity<>(REQUEST_TIMEOUT);
     }
 
-    private ByteArrayOutputStream readLogoFromTeamWithTimeout(String logo) throws InterruptedException, ExecutionException, TimeoutException {
-        //@formatter:off
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return readLogoFromTeam(logo);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }).get(3000, MILLISECONDS);
-        //@formatter:on
+    private Option<ByteArrayOutputStream> readLogoFromTeamWithTimeout(String logo) throws InterruptedException, ExecutionException, TimeoutException {
+        return CompletableFuture.supplyAsync(() -> liftedReadLogoFromTeam(logo))
+                                .get(3000, MILLISECONDS);
+    }
+
+    Option<ByteArrayOutputStream> liftedReadLogoFromTeam(String logo) {
+        return lift(this::readLogoFromTeam).apply(logo);
     }
 
     private ByteArrayOutputStream readLogoFromTeam(String logo) throws IOException {

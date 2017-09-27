@@ -1,61 +1,28 @@
 package org.koenighotze.team;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.*;
-import java.util.stream.*;
+import java.io.*;
 
+import io.vavr.control.*;
 import org.junit.*;
-import org.junit.runner.*;
-import org.springframework.beans.factory.annotation.*;
-import org.springframework.boot.test.autoconfigure.web.servlet.*;
-import org.springframework.boot.test.context.*;
-import org.springframework.test.context.junit4.*;
-import org.springframework.test.web.servlet.*;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@AutoConfigureMockMvc
 public class TeamsControllerTest {
-    @Autowired
-    private MockMvc mockMvc;
-
     @Test
-    public void should_return_the_list_of_teams() throws Exception {
-        mockMvc.perform(get("/teams/"))
-               .andExpect(status().isOk());
+    public void returns_the_image_data_for_a_teams_logo() {
+        TeamsController teamsController = new TeamsController(new TeamInMemoryRepository());
+        Option<ByteArrayOutputStream> logo = teamsController.liftedReadLogoFromTeam(
+            TeamsControllerTest.class.getResource("index.png")
+                                     .toString());
+
+        assertThat(logo.isDefined()).isTrue();
     }
 
     @Test
-    public void should_return_200_if_team_is_known() throws Exception {
-        mockMvc.perform(get("/teams/1"))
-               .andExpect(status().isOk());
-    }
+    public void returns_an_empty_optional_if_reading_a_logo_fails() {
+        TeamsController teamsController = new TeamsController(new TeamInMemoryRepository());
+        Option<ByteArrayOutputStream> logo = teamsController.liftedReadLogoFromTeam("clearly a bad url");
 
-    @Test
-    public void should_return_404_if_team_is_not_known() throws Exception {
-        mockMvc.perform(get("/teams/NoTeam"))
-               .andExpect(status().isNotFound());
-    }
-
-    @Test
-    public void should_always_return_a_valid_http_code() throws Exception {
-        ResultMatcher matcher = (MvcResult result) -> assertThat(Arrays.asList(OK.value(), NOT_FOUND.value())).contains(
-            result.getResponse()
-                  .getStatus());
-
-        Stream.of("Foo", "F95", "bar", "baz", "123")
-              .forEach(teamName -> {
-                  try {
-                      mockMvc.perform(get("/teams/{name}", teamName))
-                             .andExpect(matcher);
-                  } catch (Exception e) {
-                      throw new RuntimeException(e);
-                  }
-              });
+        assertThat(logo.isEmpty()).isTrue();
     }
 }
