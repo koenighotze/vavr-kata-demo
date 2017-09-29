@@ -65,7 +65,7 @@ public class TeamsController {
         return readLogoFromTeamWithTimeout(team.getLogoUrl())
                     .map(result -> result.map(TeamsController::logoFetchSuccessful).getOrElse(TeamsController::logoFetchFailed))
                     .recover(ExecutionException.class, logoFetchFailed())
-                    .getOrElseGet(t -> logoFetchTimedoutResponse());
+                    .getOrElse(TeamsController::logoFetchTimedoutResponse);
         //@formatter:on
     }
 
