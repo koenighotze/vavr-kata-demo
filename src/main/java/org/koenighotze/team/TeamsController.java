@@ -6,7 +6,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.REQUEST_TIMEOUT;
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
-import static org.springframework.http.MediaType.IMAGE_PNG;
+import static org.springframework.http.ResponseEntity.ok;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.awt.image.*;
@@ -43,7 +43,7 @@ public class TeamsController {
                                          .stream()
                                          .map(this::hideManagementData)
                                          .collect(Collectors.toList());
-        return ResponseEntity.ok(teams);
+        return ok(teams);
     }
 
     @RequestMapping(value = "/{id}", method = GET)
@@ -55,7 +55,7 @@ public class TeamsController {
                                  .build();
         }
 
-        return ResponseEntity.ok(team);
+        return ok(team);
     }
 
     @RequestMapping(value = "/{id}/logo", method = GET, produces = APPLICATION_OCTET_STREAM_VALUE)
@@ -90,10 +90,7 @@ public class TeamsController {
     }
 
     private static HttpEntity<InputStreamResource> logoFetchSuccessful(ByteArrayOutputStream logo) {
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(IMAGE_PNG);
-
-        return ResponseEntity.ok(new InputStreamResource(new ByteArrayInputStream(logo.toByteArray())));
+        return ok(new InputStreamResource(new ByteArrayInputStream(logo.toByteArray())));
 
     }
 
