@@ -7,6 +7,7 @@ import java.io.*;
 import io.vavr.control.*;
 import org.junit.*;
 
+
 public class TeamsControllerTest {
     @Test
     public void returns_the_image_data_for_a_teams_logo() {

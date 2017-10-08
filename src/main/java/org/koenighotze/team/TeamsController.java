@@ -51,6 +51,7 @@ public class TeamsController {
 
     @RequestMapping(value = "/{id}", method = GET)
     public HttpEntity<Team> findTeam(@PathVariable String id) {
+        logger.info("Finding team with id {}", id);
         return teamRepository.findById(id)
                              .map(ResponseEntity::ok)
                              .getOrElse(() -> ResponseEntity.notFound()
