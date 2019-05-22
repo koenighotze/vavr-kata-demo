@@ -12,6 +12,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.REQUEST_TIMEOUT;
+import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
+import static org.springframework.http.ResponseEntity.ok;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.awt.image.*;
@@ -57,7 +59,7 @@ public class TeamsController {
                                                             .build());
     }
 
-    @RequestMapping(value = "/{id}/logo", method = GET)
+    @RequestMapping(value = "/{id}/logo", method = GET, produces = APPLICATION_OCTET_STREAM_VALUE)
     @ResponseBody
     public HttpEntity<InputStreamResource> fetchLogo(@PathVariable String id) {
         return teamRepository.findById(id)
