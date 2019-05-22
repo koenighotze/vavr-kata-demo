@@ -7,6 +7,8 @@ import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
 import org.springframework.context.annotation.*;
 
+import static org.springframework.boot.SpringApplication.run;
+
 @SpringBootApplication
 public class TeamApplication {
     @Bean
@@ -42,6 +44,6 @@ public class TeamApplication {
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(TeamApplication.class, args);
+        run(TeamApplication.class, args);
     }
 }
