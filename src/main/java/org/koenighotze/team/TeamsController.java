@@ -6,6 +6,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.REQUEST_TIMEOUT;
+import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.awt.image.*;
@@ -16,7 +17,6 @@ import javax.imageio.*;
 
 import io.vavr.collection.*;
 import io.vavr.control.*;
-import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.core.io.*;
 import org.springframework.http.*;
@@ -27,8 +27,6 @@ import org.springframework.web.bind.annotation.*;
 // Note: obviously nobody should write a controller like this.
 // this is just for demonstrating bad code!
 public class TeamsController {
-    private static final Logger logger = getLogger(TeamsController.class);
-
     private final TeamInMemoryRepository teamRepository;
 
     @Autowired
@@ -51,7 +49,7 @@ public class TeamsController {
                                                             .build());
     }
 
-    @RequestMapping(value = "/{id}/logo", method = GET)
+    @RequestMapping(value = "/{id}/logo", method = GET, produces = APPLICATION_OCTET_STREAM_VALUE)
     @ResponseBody
     public HttpEntity<InputStreamResource> fetchLogo(@PathVariable String id) {
         return teamRepository.findById(id)

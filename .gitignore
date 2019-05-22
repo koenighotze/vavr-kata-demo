@@ -26,3 +26,5 @@ nbdist/
 .idea/
 .DS_Store
 out/
+lombok.config
+.idea/*

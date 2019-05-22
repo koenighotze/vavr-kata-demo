@@ -3,22 +3,22 @@
 This repository contains a simple project that is refactored using
 [Vavr](http://vavr.io).
 
-The [`master`](https://github.com/koenighotze/vavr-kata-demo) branch contains the unrefactored code. 
+The [`master`](https://github.com/koenighotze/vavr-kata-demo) branch contains the unrefactored code.
 The `stepN-TOPIC` branches each introduces a Vavr concept into the
 refactored `master` branch.
 
 * Note 1: `stepN` includes the refactorings of `step1` to `stepN-1`.
-* Note 2: you need to use a [Lombok](https://projectlombok.org/) plugin in your IDE 
+* Note 2: you need to use a [Lombok](https://projectlombok.org/) plugin in your IDE
 
 ## Topics
 
-* Using [`Option`](http://www.vavr.io/vavr-docs/#_option) 
+* Using [`Option`](http://www.vavr.io/vavr-docs/#_option)
 * Introducing Vavr [Collections](http://www.vavr.io/vavr-docs/#_collections) and interoperability
 * Introducing [Vavr-Jackson](https://github.com/vavr-io/vavr-jackson), Vavr at your boundary
 * Functional exception handling using [`Lift`](http://www.vavr.io/vavr-docs/#_lifting)
 * Functional exception handling using [`Try`](http://www.vavr.io/vavr-docs/#_try)
 * Functional exception handling using [`Either`](http://www.vavr.io/vavr-docs/#_either)
-* Using Vavr [Streams](http://www.vavr.io/vavr-docs/#_stream) with exceptions 
+* Using Vavr [Streams](http://www.vavr.io/vavr-docs/#_stream) with exceptions
 * [Property testing](http://www.vavr.io/vavr-docs/#_property_checking) the REST interface
 
 ## Application overview
@@ -128,7 +128,7 @@ HTTP/1.1 400
 Connection: close
 Content-Length: 0
 Date: Mon, 25 Sep 2017 18:57:56 GMT
-``` 
+```
 
 This is expected and used to demo, how exceptions can be handled.
 
@@ -146,8 +146,25 @@ Date: Mon, 25 Sep 2017 18:56:54 GMT
 
 This is expected and used to demo, how time outs can be handled.
 
-## Bucket list
-* https://www.oreilly.com/ideas/handling-checked-exceptions-in-java-streams?imm_mid=0f6a21&cmp=em-prog-na-na-newsltr_20170923
-* https://stackoverflow.com/questions/46225954/vavr-howto-flatmap-collection-inside-optional-object/46226814#46226814
-* Refactor to java 9?
+## The Kata
+
+1. Preparation
+  * Checkout the master branch and build the project `$ ./gradlew build`
+  * Import the project into your IDE of choice
+
+2. Using collections
+
+3. Avoiding null with option
+
+4. Use Vavr in your REST interfaces
+
+5. Errorhandling with try
+
+6. Property based testing for the controller
+
+
+
+
+
+
 
